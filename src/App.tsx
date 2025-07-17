@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from './components/ui/button'
 import { Input } from './components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card'
 import { Badge } from './components/ui/badge'
 import { Separator } from './components/ui/separator'
-import { Search, TrendingUp, ShoppingCart, Star, ExternalLink, Euro, Truck, Clock } from 'lucide-react'
-import { ChatButton } from './components/ChatConsultation'
+import { ScrollArea } from './components/ui/scroll-area'
+import { Search, TrendingUp, ShoppingCart, Star, ExternalLink, Euro, Truck, Clock, Bot, User, Send, Loader2, MessageCircle } from 'lucide-react'
 import { blink } from './blink/client'
 
 interface Product {
@@ -26,11 +26,31 @@ interface Product {
   reviews: number
 }
 
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+}
+
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Visi')
+  
+  // Chat state
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'Sveiki! Aš esu jūsų asmeninis pirkimo konsultantas. Papasakokite, ko ieškote, ir aš padėsiu rasti geriausius pasiūlymus Lietuvos e-parduotuvėse. Galiu palyginti kainas, patarti dėl produktų ir padėti sutaupyti pinigų!',
+      timestamp: new Date()
+    }
+  ])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Sample data for demonstration
   const categories = ['Visi', 'Elektronika', 'Namų prekės', 'Įrankiai', 'Sportas', 'Grožis']
@@ -143,6 +163,103 @@ function App() {
     return unsubscribe
   }, [])
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      let streamingContent = ''
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '',
+        timestamp: new Date()
+      }
+
+      setMessages(prev => [...prev, assistantMessage])
+
+      await blink.ai.streamText(
+        {
+          messages: [
+            {
+              role: 'system',
+              content: `You are a helpful shopping consultant for Lithuanian e-commerce. You help users find the best deals, compare prices, and make informed purchasing decisions across Lithuanian online stores like Pigu.lt, Senukai.lt, Varle.lt, 220.lv, and others.
+
+Key responsibilities:
+- Help users find products and compare prices
+- Provide shopping advice and recommendations
+- Explain product features and specifications
+- Suggest alternatives and better deals
+- Help with product categories (electronics, home goods, tools, etc.)
+- Provide information about shipping costs and delivery times
+- Answer questions about Lithuanian e-commerce market
+- Ask follow-up questions to better understand user needs
+- Be conversational and consultative, like a personal shopping assistant
+
+Always respond in Lithuanian language. Be friendly, helpful, and knowledgeable about Lithuanian shopping culture and preferences. Focus on practical advice that saves money and time. Ask clarifying questions to provide better recommendations.`
+            },
+            ...messages.map(msg => ({
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content
+            })),
+            {
+              role: 'user',
+              content: input
+            }
+          ],
+          model: 'gpt-4o-mini',
+          maxTokens: 500
+        },
+        (chunk) => {
+          streamingContent += chunk
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === assistantMessage.id 
+                ? { ...msg, content: streamingContent }
+                : msg
+            )
+          )
+        }
+      )
+    } catch (error) {
+      console.error('Chat error:', error)
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        role: 'assistant',
+        content: 'Atsiprašau, įvyko klaida. Bandykite dar kartą.',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev.slice(0, -1), errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     // Search functionality would be implemented here
@@ -215,44 +332,140 @@ function App() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/5 to-accent/5 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-foreground mb-4">
-            Raskite geriausius pasiūlymus Lietuvoje
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Palyginkite kainas iš visų pagrindinių e-parduotuvių ir sutaupykite pinigų
-          </p>
-          
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-            <div className="flex space-x-2">
-              <Input
-                type="text"
-                placeholder="Ieškokite produktų..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 h-12 text-lg"
-              />
-              <Button type="submit" size="lg" className="px-8">
-                <Search className="w-5 h-5 mr-2" />
-                Ieškoti
-              </Button>
-            </div>
-          </form>
-
-          <div className="flex flex-wrap justify-center gap-2 mt-6">
-            {categories.map((category) => (
-              <Badge
-                key={category}
-                variant={selectedCategory === category ? "default" : "secondary"}
-                className="cursor-pointer px-4 py-2"
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </Badge>
-            ))}
+      {/* AI Shopping Consultant Section */}
+      <section className="bg-gradient-to-br from-primary/5 to-accent/5 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              AI Pirkimo Konsultantas
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Papasakokite, ko ieškote, ir aš padėsiu rasti geriausius pasiūlymus
+            </p>
           </div>
+          
+          <Card className="h-[500px] flex flex-col">
+            <CardHeader className="flex flex-row items-center space-y-0 pb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Jūsų asmeninis pirkimo asistentas</CardTitle>
+                  <p className="text-sm text-muted-foreground">Palygina kainas ir konsultuoja apie pirkimus</p>
+                </div>
+              </div>
+            </CardHeader>
+
+            <Separator />
+
+            <CardContent className="flex-1 flex flex-col p-0">
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex items-start space-x-3 ${
+                        message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        message.role === 'user' 
+                          ? 'bg-accent text-accent-foreground' 
+                          : 'bg-primary text-primary-foreground'
+                      }`}>
+                        {message.role === 'user' ? (
+                          <User className="w-4 h-4" />
+                        ) : (
+                          <Bot className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div className={`flex-1 max-w-[80%] ${
+                        message.role === 'user' ? 'text-right' : ''
+                      }`}>
+                        <div className={`rounded-lg p-3 ${
+                          message.role === 'user'
+                            ? 'bg-accent text-accent-foreground ml-auto'
+                            : 'bg-muted'
+                        }`}>
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {message.timestamp.toLocaleTimeString('lt-LT', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-primary-foreground" />
+                      </div>
+                      <div className="bg-muted rounded-lg p-3">
+                        <div className="flex items-center space-x-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Galvoju...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {messages.length === 1 && (
+                <div className="p-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-3">Populiarūs klausimai:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      'Kur rasti pigiausią iPhone?',
+                      'Palygink skalbimo mašinų kainas',
+                      'Kokie geriausi televizoriai iki 500€?',
+                      'Kur pirkti statybos įrankius?',
+                      'Ieškau nešiojamo kompiuterio studijoms',
+                      'Reikia virtuvės prietaisų'
+                    ].map((question, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-accent"
+                        onClick={() => setInput(question)}
+                      >
+                        {question}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-4 border-t">
+                <div className="flex space-x-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Papasakokite, ko ieškote..."
+                    disabled={isLoading}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!input.trim() || isLoading}
+                    size="icon"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -466,9 +679,6 @@ function App() {
           </div>
         </div>
       </footer>
-
-      {/* Chat Button */}
-      <ChatButton />
     </div>
   )
 }
