@@ -50,7 +50,7 @@ function App() {
           originalPrice: 1399,
           shipping: 0,
           logo: '🛒',
-          url: '#',
+          url: 'https://pigu.lt/lt/mobilieji-telefonai/apple-iphone-15-pro-128gb',
           inStock: true
         },
         {
@@ -58,7 +58,7 @@ function App() {
           price: 1349,
           shipping: 5,
           logo: '🏪',
-          url: '#',
+          url: 'https://varle.lt/mobilieji-telefonai/apple-iphone-15-pro-128gb.html',
           inStock: true
         },
         {
@@ -66,7 +66,7 @@ function App() {
           price: 1289,
           shipping: 15,
           logo: '🛍️',
-          url: '#',
+          url: 'https://220.lv/lv/mobilais-telefons/apple-iphone-15-pro-128gb',
           inStock: false
         }
       ]
@@ -85,7 +85,7 @@ function App() {
           originalPrice: 999,
           shipping: 29,
           logo: '🏠',
-          url: '#',
+          url: 'https://www.senukai.lt/elektronika/televizoriai/samsung-55-qled-tv',
           inStock: true
         },
         {
@@ -93,7 +93,7 @@ function App() {
           price: 949,
           shipping: 0,
           logo: '🛒',
-          url: '#',
+          url: 'https://pigu.lt/lt/televizoriai/samsung-55-qled-smart-tv',
           inStock: true
         }
       ]
@@ -111,7 +111,7 @@ function App() {
           price: 89,
           shipping: 5,
           logo: '🏠',
-          url: '#',
+          url: 'https://www.senukai.lt/irankiai/elektriniai-irankiai/greztuvas-bosch-psr-1440',
           inStock: true
         },
         {
@@ -119,7 +119,7 @@ function App() {
           price: 95,
           shipping: 7,
           logo: '🏪',
-          url: '#',
+          url: 'https://varle.lt/irankiai/elektriniai-irankiai/bosch-greztuvas-psr-1440.html',
           inStock: true
         }
       ]
@@ -127,9 +127,12 @@ function App() {
   ]
 
   const topDeals = [
-    { store: 'Pigu.lt', discount: '30%', product: 'Laptopai', expires: '2 val.' },
-    { store: 'Senukai.lt', discount: '25%', product: 'Sodo technika', expires: '1 d.' },
-    { store: 'Varle.lt', discount: '40%', product: 'Telefonai', expires: '5 val.' }
+    { store: 'Pigu.lt', discount: '30%', product: 'Laptopai', expires: '2 val.', url: 'https://pigu.lt/lt/kompiuteriai/nesiojami-kompiuteriai' },
+    { store: 'Senukai.lt', discount: '25%', product: 'Sodo technika', expires: '1 d.', url: 'https://www.senukai.lt/sodo-technika' },
+    { store: 'Varle.lt', discount: '40%', product: 'Telefonai', expires: '5 val.', url: 'https://varle.lt/mobilieji-telefonai' },
+    { store: '220.lv', discount: '35%', product: 'Buitinė technika', expires: '3 val.', url: 'https://220.lv/lv/majsaimniecibas-preces' },
+    { store: 'Euronics.lt', discount: '20%', product: 'Elektronika', expires: '6 val.', url: 'https://www.euronics.lt' },
+    { store: 'Topo Centras', discount: '15%', product: 'Sporto prekės', expires: '4 val.', url: 'https://www.topocentras.lt' }
   ]
 
   useEffect(() => {
@@ -260,9 +263,13 @@ function App() {
             <h3 className="text-2xl font-bold text-foreground">Geriausi pasiūlymai</h3>
             <TrendingUp className="w-6 h-6 text-primary" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {topDeals.map((deal, index) => (
-              <Card key={index} className="border-l-4 border-l-accent">
+              <Card 
+                key={index} 
+                className="border-l-4 border-l-accent hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => window.open(deal.url, '_blank')}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-lg">{deal.store}</span>
@@ -271,9 +278,12 @@ function App() {
                     </Badge>
                   </div>
                   <p className="text-muted-foreground mb-2">{deal.product}</p>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4 mr-1" />
-                    Baigiasi po {deal.expires}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4 mr-1" />
+                      Baigiasi po {deal.expires}
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -341,7 +351,12 @@ function App() {
                                 Nėra sandėlyje
                               </Badge>
                             )}
-                            <Button size="sm" variant="outline" disabled={!price.inStock}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              disabled={!price.inStock}
+                              onClick={() => window.open(price.url, '_blank')}
+                            >
                               <ExternalLink className="w-3 h-3 mr-1" />
                               Pirkti
                             </Button>
@@ -394,10 +409,36 @@ function App() {
             <div>
               <h4 className="font-semibold mb-4">Parduotuvės</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li>Pigu.lt</li>
-                <li>Senukai.lt</li>
-                <li>Varle.lt</li>
-                <li>220.lv</li>
+                <li>
+                  <a href="https://pigu.lt" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    Pigu.lt
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.senukai.lt" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    Senukai.lt
+                  </a>
+                </li>
+                <li>
+                  <a href="https://varle.lt" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    Varle.lt
+                  </a>
+                </li>
+                <li>
+                  <a href="https://220.lv" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    220.lv
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.euronics.lt" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    Euronics.lt
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.topocentras.lt" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                    Topo Centras
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
